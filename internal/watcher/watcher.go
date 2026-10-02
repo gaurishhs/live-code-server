@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"errors"
 	"io/fs"
 	"log"
 	"os"
@@ -43,6 +44,9 @@ func New(root *filesystem.Root, hub *server.Hub, debounce time.Duration, loggers
 func (x *Watcher) addTree(dir string) error {
 	return filepath.WalkDir(dir, func(p string, d fs.DirEntry, e error) error {
 		if e != nil {
+			if errors.Is(e, fs.ErrPermission) && p != x.root.Path {
+				return nil
+			}
 			return e
 		}
 		if !d.IsDir() {
@@ -54,7 +58,13 @@ func (x *Watcher) addTree(dir string) error {
 				return filepath.SkipDir
 			}
 		}
-		return x.w.Add(p)
+		if err := x.w.Add(p); err != nil {
+			if errors.Is(err, fs.ErrPermission) && p != x.root.Path {
+				return filepath.SkipDir
+			}
+			return err
+		}
+		return nil
 	})
 }
 func (x *Watcher) Close() error { return x.w.Close() }

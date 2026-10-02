@@ -110,6 +110,9 @@ func (r *Root) Tree() (Entry, error) {
 func (r *Root) addChildren(parent *Entry, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
+		if errors.Is(err, fs.ErrPermission) && dir != r.Path {
+			return nil
+		}
 		return err
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })

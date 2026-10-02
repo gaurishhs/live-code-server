@@ -7,7 +7,7 @@
 With Go installed:
 
 ```sh
-go install github.com/gaurishhs/live-code-server@latest
+go install github.com/gaurishhs/live-code-server/cmd/livecode@latest
 ```
 
 Or download a binary from the project's GitHub Releases. Build locally with `make build`; cross-platform archives are produced by `make release`.
