@@ -10,9 +10,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 func TestShareReleasesLeaseWhenTunnelFailsToStart(t *testing.T) {
@@ -82,4 +85,43 @@ func TestSecretRedactorAcrossWriteBoundaries(t *testing.T) {
 	if got := out.String(); got != "output [redacted] done" {
 		t.Fatalf("output %q", got)
 	}
+}
+
+func TestShareServerAppliesAllowedOriginToAPIAndWebsocket(t *testing.T) {
+	probe, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := probe.Addr().(*net.TCPAddr).Port
+	_ = probe.Close()
+	oldPort := sharePort
+	sharePort = port
+	defer func() { sharePort = oldPort }()
+	s, err := startShareServer(t.TempDir(), []string{"https://viewer.test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_ = s.Stop(ctx)
+	}()
+	base := "http://127.0.0.1:" + strconv.Itoa(port)
+	req, _ := http.NewRequest(http.MethodOptions, base+"/api/health", nil)
+	req.Header.Set("Origin", "https://viewer.test")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.Header.Get("Access-Control-Allow-Origin") != "https://viewer.test" {
+		t.Fatalf("CORS origin %q", res.Header.Get("Access-Control-Allow-Origin"))
+	}
+	url := "ws" + base[4:] + "/ws"
+	headers := http.Header{"Origin": []string{"https://viewer.test"}}
+	conn, _, err := websocket.DefaultDialer.Dial(url, headers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.Close()
 }

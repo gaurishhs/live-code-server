@@ -32,6 +32,7 @@ var sharePort = 8787
 
 type shareOptions struct {
 	directory, eventURL, password, cloudflared string
+	origins                                    []string
 }
 
 func runShareCommand(args []string) error {
@@ -40,6 +41,7 @@ func runShareCommand(args []string) error {
 	eventURL := fs.String("event-url", envOr("LIVECODE_EVENT_API", "https://api.gaurishhs.xyz"), "event service API URL")
 	password := fs.String("event-password", os.Getenv("LIVECODE_EVENT_PASSWORD"), "event service password")
 	cloudflared := fs.String("cloudflared", envOr("LIVECODE_CLOUDFLARED", "cloudflared"), "cloudflared executable")
+	origins := fs.String("allow-origin", os.Getenv("LIVECODE_ALLOW_ORIGIN"), "comma-separated allowed browser origins")
 	if err := fs.Parse(reorderArgs(fs, args)); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -55,7 +57,7 @@ func runShareCommand(args []string) error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return runShare(ctx, shareOptions{directory: dir, eventURL: *eventURL, password: *password, cloudflared: *cloudflared}, startTunnel)
+	return runShare(ctx, shareOptions{directory: dir, eventURL: *eventURL, password: *password, cloudflared: *cloudflared, origins: split(*origins)}, startTunnel)
 }
 
 func runShare(ctx context.Context, opts shareOptions, start tunnelStarter) error {
@@ -65,7 +67,7 @@ func runShare(ctx context.Context, opts shareOptions, start tunnelStarter) error
 	}
 
 	fmt.Println("Starting livecode server...")
-	local, err := startShareServer(opts.directory)
+	local, err := startShareServer(opts.directory, opts.origins)
 	if err != nil {
 		return err
 	}
@@ -302,7 +304,7 @@ type shareServer struct {
 	once      sync.Once
 }
 
-func startShareServer(dir string) (*shareServer, error) {
+func startShareServer(dir string, origins []string) (*shareServer, error) {
 	absolute, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
@@ -313,7 +315,7 @@ func startShareServer(dir string) (*shareServer, error) {
 		return nil, err
 	}
 	logger := log.New(os.Stderr, "", 0)
-	api := server.New(server.Config{Root: root, Logger: logger})
+	api := server.New(server.Config{Root: root, Origins: origins, Logger: logger})
 	w, err := watcher.New(root, api.Hub(), 250*time.Millisecond, logger)
 	if err != nil {
 		return nil, err

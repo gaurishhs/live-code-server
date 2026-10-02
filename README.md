@@ -73,13 +73,17 @@ Configuration is available through flags or environment variables:
 | Event API URL | `--event-url` | `LIVECODE_EVENT_API` | `https://api.gaurishhs.xyz` |
 | Event password | `--event-password` | `LIVECODE_EVENT_PASSWORD` | required |
 | cloudflared executable | `--cloudflared` | `LIVECODE_CLOUDFLARED` | `cloudflared` |
+| Browser origins | `--allow-origin` | `LIVECODE_ALLOW_ORIGIN` | none |
 
 For example:
 
 ```sh
 livecode share ./my-project --event-url https://api.gaurishhs.xyz
 livecode share . --cloudflared /usr/local/bin/cloudflared
+livecode share . --allow-origin https://viewer.example.com
 ```
+
+For local frontend development, use its exact origin, such as `--allow-origin http://localhost:4321`. For a deployed viewer, allow its Pages origin. Browser API requests and WebSocket upgrades both check this setting; CORS is disabled by default for sharing.
 
 The event service handles only claiming, renewing, and releasing the lease and returning the public URL and tunnel credential. Browser API and WebSocket traffic flows through Cloudflare Tunnel to the local livecode server; the Worker does not proxy those requests.
 
