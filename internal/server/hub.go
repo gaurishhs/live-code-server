@@ -83,3 +83,13 @@ func (h *Hub) Broadcast(ev Event) {
 		}
 	}
 }
+
+func (h *Hub) Close() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for c := range h.clients {
+		_ = c.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "server shutting down"), time.Now().Add(time.Second))
+		_ = c.Close()
+		delete(h.clients, c)
+	}
+}

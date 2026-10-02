@@ -36,6 +36,13 @@ type settings struct {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "share" {
+		if err := runShareCommand(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)

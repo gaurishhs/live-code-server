@@ -55,6 +55,34 @@ cloudflared tunnel --url http://127.0.0.1:8787
 
 The `--tunnel-host` named tunnel option is not supported in this release. Quick tunnels use a generated `trycloudflare.com` hostname.
 
+## Sharing
+
+`livecode share [directory]` starts the local read-only livecode server, claims the temporary event sharing lease, and runs `cloudflared` with the tunnel token returned by the event service. The token and lease stay in memory and are not printed or saved. The CLI prints the public URL returned by the service for the other person to open in the live viewer.
+
+Only one user can hold the event slot at a time. Press **Ctrl+C** to stop the tunnel, release the slot, and stop the local server.
+
+```sh
+export LIVECODE_EVENT_PASSWORD="your-event-password"
+livecode share .
+```
+
+Configuration is available through flags or environment variables:
+
+| Setting | Flag | Environment variable | Default |
+| --- | --- | --- | --- |
+| Event API URL | `--event-url` | `LIVECODE_EVENT_API` | `https://api.gaurishhs.xyz` |
+| Event password | `--event-password` | `LIVECODE_EVENT_PASSWORD` | required |
+| cloudflared executable | `--cloudflared` | `LIVECODE_CLOUDFLARED` | `cloudflared` |
+
+For example:
+
+```sh
+livecode share ./my-project --event-url https://api.gaurishhs.xyz
+livecode share . --cloudflared /usr/local/bin/cloudflared
+```
+
+The event service handles only claiming, renewing, and releasing the lease and returning the public URL and tunnel credential. Browser API and WebSocket traffic flows through Cloudflare Tunnel to the local livecode server; the Worker does not proxy those requests.
+
 ## API
 
 - `GET /api/health` → `{"status":"ok"}`
