@@ -10,7 +10,47 @@ With Go installed:
 go install github.com/gaurishhs/live-code-server/cmd/livecode@latest
 ```
 
-Or download a binary from the project's GitHub Releases. Build locally with `make build`; cross-platform archives are produced by `make release`.
+Or download a binary from the project's GitHub Releases. Build locally with `make build`; cross-platform binaries are produced by `make release`.
+
+### Linux
+
+For x86-64 Linux:
+
+```sh
+curl -L https://github.com/gaurishhs/live-code-server/releases/latest/download/livecode-linux-amd64 -o livecode
+chmod +x livecode
+sudo install -m 0755 livecode /usr/local/bin/livecode
+```
+
+For ARM64 Linux, use `livecode-linux-arm64` in the download URL instead.
+
+### macOS
+
+For Apple silicon:
+
+```sh
+curl -L https://github.com/gaurishhs/live-code-server/releases/latest/download/livecode-darwin-arm64 -o livecode
+chmod +x livecode
+sudo install -m 0755 livecode /usr/local/bin/livecode
+```
+
+For an Intel Mac, use `livecode-darwin-amd64` in the download URL instead.
+
+### Windows
+
+In PowerShell, download the x86-64 binary to a user install directory and add that directory to your user `Path`:
+
+```powershell
+$installDir = "$env:LOCALAPPDATA\Programs\livecode"
+New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+Invoke-WebRequest "https://github.com/gaurishhs/live-code-server/releases/latest/download/livecode-windows-amd64.exe" -OutFile "$installDir\livecode.exe"
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (($userPath -split ";") -notcontains $installDir) {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
+}
+```
+
+Open a new terminal after installation, then verify with `livecode --version`.
 
 ## Usage
 
